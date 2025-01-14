@@ -1,7 +1,11 @@
 package main
 
-import "log"
+import (
+	"log"
+	"rolo/backend/arduino"
+)
 
 func main() {
 	log.Println("working")
+	arduino.Start()
 }
