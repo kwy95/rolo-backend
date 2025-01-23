@@ -1,9 +1,9 @@
 package arduino
 
 import (
+	"go.bug.st/serial"
 	"log"
 	"time"
-	"go.bug.st/serial"
 )
 
 func Start() {
@@ -15,6 +15,25 @@ func Start() {
 		log.Fatal("Failed to connect to Arduino")
 	}
 	defer port.Close()
+
+	buff := make([]byte, 100)
+	index := 0
+	for {
+		n, err := port.Read(buff[index:])
+		if err != nil {
+			log.Fatal(err)
+		}
+		if n == 0 {
+			log.Println("\nEOF")
+			break
+		}
+		index += n
+		// log.Printf("%v", string(buff[:index]))
+		if buff[index-1] == '}' {
+			log.Printf("%v", string(buff[:index]))
+			index = 0
+		}
+	}
 }
 
 func getPorts() []string {
@@ -22,15 +41,18 @@ func getPorts() []string {
 	if err != nil {
 		log.Fatal(err)
 	}
-	if len(ports) == 0 {
-		log.Fatal("No serial ports found!")
+	for len(ports) == 0 {
+		ports, err = serial.GetPortsList()
+		if err != nil {
+			log.Fatal(err)
+		}
 	}
 	return ports
 }
 
 func connectArduino(ports []string) serial.Port {
 	mode := &serial.Mode{
-		BaudRate: 9600,
+		BaudRate: 115200,
 	}
 
 	for _, port_name := range ports {
