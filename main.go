@@ -11,9 +11,10 @@ func main() {
 	log.SetFlags(log.Ltime | log.Lmicroseconds | log.Lshortfile)
 	log.Println("working")
 
-	arduino.Start()
-
 	processedDataBuffer := make(chan []byte, 5000)
+	arduinoSerial := arduino.NewArduinoSerial(processedDataBuffer)
+	arduinoSerial.Start()
+
 	accessAPI := api.NewAccessAPI(processedDataBuffer)
 	accessAPI.Start()
 

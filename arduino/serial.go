@@ -6,25 +6,37 @@ import (
 	"time"
 )
 
-func Start() {
-	log.Println("started")
-
-	ports := getPorts()
-	port := connectArduino(ports)
-	if port == nil {
-		log.Fatal("Failed to connect to Arduino")
-	}
-
-	go receiveData(port)
+type ArduinoSerial struct {
+	port   serial.Port
+	buffer chan []byte
 }
 
-func receiveData(port serial.Port) {
-	defer port.Close()
+func NewArduinoSerial(buffer chan []byte) *ArduinoSerial {
+	return &ArduinoSerial{
+		port:   nil,
+		buffer: buffer,
+	}
+}
+
+func (a *ArduinoSerial) Start() {
+	log.Println("started arduino")
+
+	ports := getPorts()
+	a.connectArduino(ports)
+
+	go a.receiveData()
+}
+
+func (a *ArduinoSerial) receiveData() {
+	defer func() {
+		a.port.Close()
+		a.port = nil
+	}()
 
 	buff := make([]byte, 100)
 	index := 0
 	for {
-		n, err := port.Read(buff[index:])
+		n, err := a.port.Read(buff[index:])
 		if err != nil {
 			log.Fatal(err)
 		}
@@ -35,7 +47,7 @@ func receiveData(port serial.Port) {
 		index += n
 		// log.Printf("%v", string(buff[:index]))
 		if buff[index-1] == '}' {
-			log.Printf("%v", string(buff[:index]))
+			a.buffer <- buff[:index]
 			index = 0
 		}
 	}
@@ -55,7 +67,7 @@ func getPorts() []string {
 	return ports
 }
 
-func connectArduino(ports []string) serial.Port {
+func (a *ArduinoSerial) connectArduino(ports []string) {
 	mode := &serial.Mode{
 		BaudRate: 115200,
 	}
@@ -71,10 +83,11 @@ func connectArduino(ports []string) serial.Port {
 			continue
 		}
 
-		return port
+		a.port = port
+		return
 	}
 
-	return nil
+	log.Fatal("Failed to connect to Arduino")
 }
 
 func confirmArduino(port serial.Port) bool {
