@@ -58,9 +58,10 @@ func (w *WSManager) listenForDataFromWSUntilDead() {
 
 func (w *WSManager) sendBuffer() {
 	for w.live != nil {
-		err := w.SendToSocket(<-w.buffer)
+		msg := <-w.buffer
+		err := w.SendToSocket(msg)
 		if err != nil {
-			log.Println("dead WS, exiting send loop ", err)
+			log.Println("dead WS, exiting send loop ", err, msg)
 			w.lock.Lock()
 			w.live.conn.Close()
 			w.live = nil
