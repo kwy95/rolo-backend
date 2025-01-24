@@ -14,6 +14,11 @@ func Start() {
 	if port == nil {
 		log.Fatal("Failed to connect to Arduino")
 	}
+
+	go receiveData(port)
+}
+
+func receiveData(port serial.Port) {
 	defer port.Close()
 
 	buff := make([]byte, 100)
