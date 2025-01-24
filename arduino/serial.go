@@ -74,7 +74,7 @@ func connectArduino(ports []string) serial.Port {
 
 func confirmArduino(port serial.Port) bool {
 	port.ResetInputBuffer()
-	time.Sleep(1)
+	time.Sleep(1 * time.Second)
 	buff := make([]byte, 1)
 	n, err := port.Read(buff)
 	if err != nil {
