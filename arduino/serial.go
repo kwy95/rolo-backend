@@ -44,13 +44,21 @@ func (a *ArduinoSerial) receiveData() {
 			log.Println("\nEOF")
 			break
 		}
-		index += n
-		// log.Printf("%v", string(buff[:index]))
-		if buff[index-1] == '}' {
-			a.buffer <- buff[:index]
-			index = 0
+		index = a.parseData(buff, index, n)
+	}
+}
+
+func (a *ArduinoSerial) parseData(data []byte, index int, n int) int {
+	for i := 0; i < index+n; i++ {
+		if data[i] == '}' {
+			a.buffer <- data[:i+1]
+			for j := i + 1; j < index+n; j++ {
+				data[j-i-1] = data[j]
+			}
+			return index + n - i - 1
 		}
 	}
+	return index + n
 }
 
 func getPorts() []string {
