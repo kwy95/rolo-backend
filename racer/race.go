@@ -26,11 +26,10 @@ const (
 type Race struct {
 	inputBuff  chan []byte
 	outputBuff chan []byte
-	Bikes      [2]*Bike
+	Bikes      map[int]*Bike
 }
 
 type Bike struct {
-	ID           int     `json:"id"`
 	Order        int     `json:"order"`
 	LastUpdate   int     `json:"-"`
 	SpeedOn      float64 `json:"speed"`
@@ -45,11 +44,17 @@ type BikeInstant struct {
 }
 
 func NewRace(in chan []byte, out chan []byte) *Race {
-	return &Race{
+	race := Race{
 		inputBuff:  in,
 		outputBuff: out,
-		Bikes:      [2]*Bike{{ID: 0}, {ID: 1}},
+		Bikes:      make(map[int]*Bike),
 	}
+	bike0 := Bike{}
+	bike1 := Bike{}
+	race.Bikes[0] = &bike0
+	race.Bikes[1] = &bike1
+
+	return &race
 }
 
 func (r *Race) Start() {
@@ -58,7 +63,7 @@ func (r *Race) Start() {
 			update := bikeDataFromArduinoData(data)
 			updatedBike := r.Bikes[update.ID]
 			updatedBike.processUpdate(update)
-			encoded, _ := json.Marshal(updatedBike)
+			encoded, _ := json.Marshal(r.Bikes)
 			r.outputBuff <- encoded
 		}
 	}()
@@ -89,11 +94,6 @@ func bikeDataFromArduinoData(data []byte) *BikeInstant {
 }
 
 func (b *Bike) processUpdate(update *BikeInstant) {
-	if b.ID != update.ID {
-		log.Println("bike ID mismatch")
-		return
-	}
-
 	if b.LastUpdate == 0 {
 		b.LastUpdate = update.Moment
 		return
