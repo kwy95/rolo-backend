@@ -5,6 +5,21 @@ import (
 	"strconv"
 )
 
+const (
+	// meters
+	TrackLength  float64 = 200.0
+	WheelRadius  float64 = 0.349
+	SensorRadius float64 = 0.12
+	SensorArch   float64 = 0.03
+
+	BikeRatio   float64 = 44.0 / 14.0
+	PulsePerRev float64 = 5.0
+	Pi          float64 = 3.14159265358979323846264338327950288419716939937510582097494459
+
+	DistBetweenPulse float64 = 2.0 * Pi * WheelRadius / PulsePerRev
+	DistOnPulse      float64 = WheelRadius * SensorArch * BikeRatio / SensorRadius
+)
+
 type Race struct {
 	inputBuff  chan []byte
 	outputBuff chan []byte
