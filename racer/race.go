@@ -26,15 +26,16 @@ const (
 type Race struct {
 	inputBuff  chan []byte
 	outputBuff chan []byte
-	Bikes      map[int]*Bike
+	Bikes      map[int]*Bike `json:"bikes"`
+	Order      int           `json:"order"`
 }
 
 type Bike struct {
-	Order        int     `json:"order"`
 	LastUpdate   int     `json:"-"`
 	SpeedOn      float64 `json:"speed"`
 	SpeedBetween float64 `json:"-"`
-	Distance     float64 `json:"distance"`
+	Distance     float64 `json:"-"`
+	Progress     float64 `json:"progress"`
 }
 
 type BikeInstant struct {
@@ -61,9 +62,8 @@ func (r *Race) Start() {
 	go func() {
 		for data := range r.inputBuff {
 			update := bikeDataFromArduinoData(data)
-			updatedBike := r.Bikes[update.ID]
-			updatedBike.processUpdate(update)
-			encoded, _ := json.Marshal(r.Bikes)
+			r.processUpdate(update)
+			encoded, _ := json.Marshal(r)
 			r.outputBuff <- encoded
 		}
 	}()
@@ -93,7 +93,13 @@ func bikeDataFromArduinoData(data []byte) *BikeInstant {
 	return &bikeInstant
 }
 
-func (b *Bike) processUpdate(update *BikeInstant) {
+func (r *Race) processUpdate(update *BikeInstant) {
+	b, ok := r.Bikes[update.ID]
+	if !ok {
+		log.Println("bike not found")
+		return
+	}
+
 	if b.LastUpdate == 0 {
 		b.LastUpdate = update.Moment
 		return
@@ -105,7 +111,8 @@ func (b *Bike) processUpdate(update *BikeInstant) {
 	b.SpeedOn = MpStoKmH * DistOnPulse / (float64(update.PulseLength) * TimeScale)
 	b.SpeedBetween = MpStoKmH * DistBetweenPulse / (float64(timeDiff) * TimeScale)
 	b.Distance += DistBetweenPulse
-	b.Order++
+	b.Progress = b.Distance / TrackLength
+	r.Order++
 }
 
 func (b *BikeInstant) inputField(field int, value []byte) error {
