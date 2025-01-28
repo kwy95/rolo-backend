@@ -4,7 +4,6 @@ import (
 	"log"
 	"rolo/backend/api"
 	"rolo/backend/arduino"
-	"rolo/backend/racer"
 	"sync"
 )
 
@@ -19,10 +18,7 @@ func main() {
 
 	processedDataBuffer := make(chan []byte, 5000)
 
-	race := racer.NewRace(directDataBuffer, processedDataBuffer)
-	race.Start()
-
-	accessAPI := api.NewAccessAPI(processedDataBuffer)
+	accessAPI := api.NewAccessAPI(directDataBuffer, processedDataBuffer)
 	accessAPI.Start()
 
 	wg := sync.WaitGroup{}

@@ -59,12 +59,21 @@ func NewRace(in chan []byte, out chan []byte) *Race {
 }
 
 func (r *Race) Start() {
+	for len(r.inputBuff) > 0 {
+		data := <-r.inputBuff
+		func(d []byte) {}(data)
+	}
 	go func() {
 		for data := range r.inputBuff {
 			update := bikeDataFromArduinoData(data)
 			r.processUpdate(update)
 			encoded, _ := json.Marshal(r)
 			r.outputBuff <- encoded
+
+			if r.Bikes[0].Progress >= 1.0 || r.Bikes[1].Progress >= 1.0 {
+				log.Println("Finished:", r.Bikes[0].Progress, ";", r.Bikes[1].Progress)
+				return
+			}
 		}
 	}()
 }
