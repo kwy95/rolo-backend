@@ -26,6 +26,7 @@ const (
 type Race struct {
 	inputBuff  chan []byte
 	outputBuff chan []byte
+	done       bool
 	Bikes      map[int]*Bike `json:"bikes"`
 	Order      int           `json:"order"`
 }
@@ -48,6 +49,7 @@ func NewRace(in chan []byte, out chan []byte) *Race {
 	race := Race{
 		inputBuff:  in,
 		outputBuff: out,
+		done:       false,
 		Bikes:      make(map[int]*Bike),
 	}
 	bike0 := Bike{}
@@ -59,23 +61,32 @@ func NewRace(in chan []byte, out chan []byte) *Race {
 }
 
 func (r *Race) Start() {
-	for len(r.inputBuff) > 0 {
-		data := <-r.inputBuff
-		func(d []byte) {}(data)
-	}
+	clearChannel(r.inputBuff)
 	go func() {
 		for data := range r.inputBuff {
+			if r.Bikes[0].Progress >= 1.0 || r.Bikes[1].Progress >= 1.0 || r.done == true {
+				log.Println("Finished:", r.Bikes[0].Progress, ";", r.Bikes[1].Progress)
+				return
+			}
+
 			update := bikeDataFromArduinoData(data)
 			r.processUpdate(update)
 			encoded, _ := json.Marshal(r)
 			r.outputBuff <- encoded
-
-			if r.Bikes[0].Progress >= 1.0 || r.Bikes[1].Progress >= 1.0 {
-				log.Println("Finished:", r.Bikes[0].Progress, ";", r.Bikes[1].Progress)
-				return
-			}
 		}
 	}()
+}
+
+func (r *Race) EndRace() {
+	log.Println("Race finished:", r.Bikes[0].Progress, ";", r.Bikes[1].Progress)
+	r.done = true
+}
+
+func clearChannel(c chan []byte) {
+	for len(c) > 0 {
+		data := <-c
+		func(d []byte) {}(data)
+	}
 }
 
 func bikeDataFromArduinoData(data []byte) *BikeInstant {

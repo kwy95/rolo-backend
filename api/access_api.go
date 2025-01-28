@@ -9,6 +9,7 @@ import (
 
 type AccessAPI struct {
 	WSManager *WSManager
+	Race      *racer.Race
 	input     chan []byte
 }
 
@@ -22,6 +23,7 @@ func NewAccessAPI(in chan []byte, out chan []byte) *AccessAPI {
 func (a *AccessAPI) Start() {
 	http.HandleFunc("/ws", http.HandlerFunc(a.handleWS))
 	http.HandleFunc("/start", http.HandlerFunc(a.handleStart))
+	http.HandleFunc("/stop", http.HandlerFunc(a.handleStop))
 
 	go func() {
 		log.Fatal(http.ListenAndServe(":8080", nil))
@@ -39,6 +41,10 @@ func (a *AccessAPI) handleWS(w http.ResponseWriter, r *http.Request) {
 }
 
 func (a *AccessAPI) handleStart(w http.ResponseWriter, r *http.Request) {
-	race := racer.NewRace(a.input, a.WSManager.buffer)
-	race.Start()
+	a.Race = racer.NewRace(a.input, a.WSManager.buffer)
+	a.Race.Start()
+}
+
+func (a *AccessAPI) handleStop(w http.ResponseWriter, r *http.Request) {
+	a.Race.EndRace()
 }
