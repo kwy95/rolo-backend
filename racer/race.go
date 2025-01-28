@@ -32,7 +32,7 @@ type Race struct {
 }
 
 type Bike struct {
-	LastUpdate   int     `json:"-"`
+	LastUpdate   uint32  `json:"-"`
 	SpeedOn      float64 `json:"speed"`
 	SpeedBetween float64 `json:"-"`
 	Distance     float64 `json:"-"`
@@ -40,9 +40,9 @@ type Bike struct {
 }
 
 type BikeInstant struct {
-	ID          int `json:"id"`
-	Moment      int `json:"moment"`
-	PulseLength int `json:"pulseLength"`
+	ID          int    `json:"id"`
+	Moment      uint32 `json:"moment"`
+	PulseLength uint32 `json:"pulseLength"`
 }
 
 func NewRace(in chan []byte, out chan []byte) *Race {
@@ -137,13 +137,16 @@ func (r *Race) processUpdate(update *BikeInstant) {
 
 func (b *BikeInstant) inputField(field int, value []byte) error {
 	var err error
+	var convertedValue uint64
 	switch field {
 	case 0:
 		b.ID, err = strconv.Atoi(string(value))
 	case 1:
-		b.PulseLength, err = strconv.Atoi(string(value))
+		convertedValue, err = strconv.ParseUint(string(value), 10, 32)
+		b.PulseLength = uint32(convertedValue)
 	case 2:
-		b.Moment, err = strconv.Atoi(string(value))
+		convertedValue, err = strconv.ParseUint(string(value), 10, 32)
+		b.Moment = uint32(convertedValue)
 	}
 	return err
 }
