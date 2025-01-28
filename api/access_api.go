@@ -41,10 +41,20 @@ func (a *AccessAPI) handleWS(w http.ResponseWriter, r *http.Request) {
 }
 
 func (a *AccessAPI) handleStart(w http.ResponseWriter, r *http.Request) {
+	if a.Race != nil {
+		a.Race.EndRace()
+		a.Race = nil
+	}
+	log.Println("Race started")
 	a.Race = racer.NewRace(a.input, a.WSManager.buffer)
 	a.Race.Start()
 }
 
 func (a *AccessAPI) handleStop(w http.ResponseWriter, r *http.Request) {
+	if a.Race == nil {
+		log.Println("No race runnning")
+		return
+	}
+	log.Println("Race stopped")
 	a.Race.EndRace()
 }
